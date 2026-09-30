@@ -1,3 +1,21 @@
 {% extends "base.html" %}
-{% block title %}Register · AutoParts IQ{% endblock %}
-{% block page_content %}<div class="auth-card"><h1 class="h3 mb-4">Create account</h1><form method="post"><input class="form-control mb-3" name="username" placeholder="Username" required><input class="form-control mb-3" type="email" name="email" placeholder="Email" required><input class="form-control mb-3" type="password" name="password" placeholder="Password (8+ characters)" required><input class="form-control mb-4" type="password" name="confirm_password" placeholder="Confirm password" required><button class="btn btn-primary w-100">Register</button></form><p class="text-muted mt-4 mb-0">Already registered? <a href="{{ url_for('auth.login') }}">Sign in</a></p></div>{% endblock %}
+{% block title %}Login · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center min-vh-75">
+  <div class="auth-card">
+    <h1 class="h3 mb-4">Welcome back</h1>
+    <form method="post">
+      <div class="mb-3">
+        <label for="identifier" class="form-label">Username or email</label>
+        <input id="identifier" class="form-control" name="identifier" required autofocus>
+      </div>
+      <div class="mb-4">
+        <label for="password" class="form-label">Password</label>
+        <input id="password" class="form-control" type="password" name="password" required>
+      </div>
+      <button class="btn btn-primary w-100">Sign in</button>
+    </form>
+    <p class="text-muted mt-4 mb-0">New here? <a href="{{ url_for('auth.register') }}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

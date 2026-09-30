@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Suppliers · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Vendor network</p>
+    <h1 class="h2 mb-0">Suppliers</h1>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('suppliers.create_supplier') }}">Add Supplier</a>
+</div>
+
+<div class="panel-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-8">
+      <label class="form-label">Search suppliers</label>
+      <input class="form-control" type="text" name="q" value="{{ search }}" placeholder="Supplier name, contact person, email">
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button class="btn btn-primary w-100" type="submit">Search</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('suppliers.index') }}">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="table-responsive panel-card">
+  <table class="table table-hover align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Supplier</th>
+        <th>Contact</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Lead time</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if suppliers %}
+        {% for supplier in suppliers %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ supplier.supplier_name }}</div>
+            <small class="text-muted">{{ supplier.address or 'No address on file' }}</small>
+          </td>
+          <td>{{ supplier.contact_person or 'N/A' }}</td>
+          <td>{{ supplier.email or 'N/A' }}</td>
+          <td>{{ supplier.phone or 'N/A' }}</td>
+          <td>{{ supplier.lead_time_days }} days</td>
+          <td>
+            <div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('suppliers.supplier_detail', supplier_id=supplier.id) }}">View</a>
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('suppliers.edit_supplier', supplier_id=supplier.id) }}">Edit</a>
+              <form method="post" action="{{ url_for('suppliers.delete_supplier', supplier_id=supplier.id) }}" onsubmit="return confirm('Delete this supplier?');">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-5">No suppliers available. Add your first supplier to begin procurement planning.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

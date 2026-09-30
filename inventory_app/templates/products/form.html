@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Products · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Catalog management</p>
+    <h1 class="h2 mb-0">Products</h1>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('products.create_product') }}">Add Product</a>
+</div>
+
+<div class="panel-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label">Search</label>
+      <input class="form-control" type="text" name="q" value="{{ search }}" placeholder="Product name, part number, brand">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Category</label>
+      <select class="form-select" name="category">
+        <option value="">All categories</option>
+        {% for category_option in categories %}
+          <option value="{{ category_option }}" {% if category_option == category %}selected{% endif %}>{{ category_option }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button class="btn btn-primary w-100" type="submit">Filter</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('products.index') }}">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="table-responsive panel-card">
+  <table class="table table-hover align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Part</th>
+        <th>Category</th>
+        <th>Brand</th>
+        <th>Stock</th>
+        <th>Price</th>
+        <th>Supplier</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if products %}
+        {% for product in products %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ product.product_name }}</div>
+            <small class="text-muted">{{ product.part_number }}</small>
+          </td>
+          <td>{{ product.category }}</td>
+          <td>{{ product.brand }}</td>
+          <td>
+            {% if product.current_stock == 0 %}
+              <span class="badge bg-danger">Out of stock</span>
+            {% elif product.current_stock <= product.reorder_level %}
+              <span class="badge bg-warning text-dark">Low stock</span>
+            {% else %}
+              <span class="badge bg-success">In stock</span>
+            {% endif %}
+            <div class="text-muted small">{{ product.current_stock }} units</div>
+          </td>
+          <td>${{ '%.2f'|format(product.unit_price) }}</td>
+          <td>{{ product.supplier.supplier_name if product.supplier else 'Unassigned' }}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('products.product_detail', product_id=product.id) }}">View</a>
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('products.edit_product', product_id=product.id) }}">Edit</a>
+              <form method="post" action="{{ url_for('products.delete_product', product_id=product.id) }}" onsubmit="return confirm('Delete this product?');">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-5">
+            No products found. Add your first spare-part item to start the inventory catalog.
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Operations overview</p>
+    <h1 class="h2 mb-0">Inventory dashboard</h1>
+  </div>
+  <span class="badge text-bg-light border">Stage 2</span>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="metric-card">
+      <span class="metric-label">Products</span>
+      <strong>{{ product_count }}</strong>
+      <small>Managed parts</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="metric-card">
+      <span class="metric-label">Suppliers</span>
+      <strong>{{ supplier_count }}</strong>
+      <small>Active vendors</small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="metric-card">
+      <span class="metric-label">Users</span>
+      <strong>{{ user_count }}</strong>
+      <small>Authorized team members</small>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4 g-3">
+  <div class="col-lg-6">
+    <div class="panel-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Quick actions</h2>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="{{ url_for('products.create_product') }}">Add Product</a>
+        <a class="btn btn-outline-primary" href="{{ url_for('suppliers.create_supplier') }}">Add Supplier</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="panel-card">
+      <h2 class="h5 mb-3">Current focus</h2>
+      <p class="text-muted mb-0">This stage adds product and supplier management, with stock indicators and search/filter controls for the automotive inventory workflow.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

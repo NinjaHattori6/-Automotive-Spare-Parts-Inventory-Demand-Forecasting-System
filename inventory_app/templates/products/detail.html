@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Product · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="panel-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <p class="text-uppercase text-primary small fw-bold mb-1">Catalog</p>
+          <h1 class="h2 mb-0">{{ action }} Product</h1>
+        </div>
+        <a class="btn btn-outline-secondary" href="{{ url_for('products.index') }}">Back to list</a>
+      </div>
+
+      <form method="post">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Product name</label>
+            <input class="form-control" name="product_name" value="{{ product.product_name if product else '' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Part number</label>
+            <input class="form-control" name="part_number" value="{{ product.part_number if product else '' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Category</label>
+            <input class="form-control" name="category" value="{{ product.category if product else '' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Brand</label>
+            <input class="form-control" name="brand" value="{{ product.brand if product else '' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Supplier</label>
+            <select class="form-select" name="supplier_id">
+              <option value="">Unassigned</option>
+              {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}" {% if product and product.supplier_id == supplier.id %}selected{% endif %}>{{ supplier.supplier_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="4">{{ product.description if product else '' }}</textarea>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Unit price</label>
+            <input class="form-control" type="number" step="0.01" min="0" name="unit_price" value="{{ product.unit_price if product else 0 }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Current stock</label>
+            <input class="form-control" type="number" min="0" name="current_stock" value="{{ product.current_stock if product else 0 }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Minimum stock</label>
+            <input class="form-control" type="number" min="0" name="minimum_stock" value="{{ product.minimum_stock if product else 0 }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Reorder level</label>
+            <input class="form-control" type="number" min="0" name="reorder_level" value="{{ product.reorder_level if product else 0 }}">
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{{ url_for('products.index') }}">Cancel</a>
+          <button class="btn btn-primary" type="submit">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Supplier · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="panel-card">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <p class="text-uppercase text-primary small fw-bold mb-1">Vendor management</p>
+          <h1 class="h2 mb-0">{{ action }} Supplier</h1>
+        </div>
+        <a class="btn btn-outline-secondary" href="{{ url_for('suppliers.index') }}">Back to list</a>
+      </div>
+
+      <form method="post">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Supplier name</label>
+            <input class="form-control" name="supplier_name" value="{{ supplier.supplier_name if supplier else '' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contact person</label>
+            <input class="form-control" name="contact_person" value="{{ supplier.contact_person if supplier else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" name="email" value="{{ supplier.email if supplier else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input class="form-control" name="phone" value="{{ supplier.phone if supplier else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Lead time (days)</label>
+            <input class="form-control" type="number" min="0" name="lead_time_days" value="{{ supplier.lead_time_days if supplier else 0 }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Address</label>
+            <textarea class="form-control" rows="4" name="address">{{ supplier.address if supplier else '' }}</textarea>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{{ url_for('suppliers.index') }}">Cancel</a>
+          <button class="btn btn-primary" type="submit">Save Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

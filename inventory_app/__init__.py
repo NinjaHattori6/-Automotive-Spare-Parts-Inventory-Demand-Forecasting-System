@@ -15,10 +15,12 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     from inventory_app import models  # noqa: F401
-    from inventory_app.routes import auth, dashboard
+    from inventory_app.routes import auth, dashboard, products, suppliers
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(dashboard.bp)
+    app.register_blueprint(products.bp)
+    app.register_blueprint(suppliers.bp)
 
     @app.cli.command("init-db")
     def init_db_command():

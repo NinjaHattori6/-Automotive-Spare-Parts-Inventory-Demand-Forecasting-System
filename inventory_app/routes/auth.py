@@ -1,4 +1,4 @@
-from functools import wraps
+from datetime import datetime, timezone
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
@@ -11,7 +11,7 @@ bp = Blueprint("auth", __name__)
 
 
 def login_required(view):
-    @wraps(view)
+    @staticmethod
     def wrapped_view(*args, **kwargs):
         if session.get("user_id") is None:
             flash("Please log in to continue.", "warning")
