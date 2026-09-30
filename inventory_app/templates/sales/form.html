@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Sales · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Sales operations</p>
+    <h1 class="h2 mb-0">Sales</h1>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('sales.create_sale') }}">Record Sale</a>
+</div>
+
+<div class="panel-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-8">
+      <label class="form-label">Filter by product</label>
+      <select class="form-select" name="product_id">
+        <option value="">All products</option>
+        {% for product in products %}
+          <option value="{{ product.id }}" {% if selected_product_id == product.id %}selected{% endif %}>{{ product.product_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button class="btn btn-primary w-100" type="submit">Filter</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('sales.index') }}">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="table-responsive panel-card">
+  <table class="table table-hover align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Unit Price</th>
+        <th>Total</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if sales %}
+        {% for sale in sales %}
+        <tr>
+          <td>{{ sale.product.product_name if sale.product else 'Unknown product' }}</td>
+          <td>{{ sale.quantity }}</td>
+          <td>${{ '%.2f'|format(sale.unit_price) }}</td>
+          <td>${{ '%.2f'|format(sale.total_amount) }}</td>
+          <td>{{ sale.sale_date.strftime('%Y-%m-%d') if sale.sale_date else 'N/A' }}</td>
+          <td>
+            <form method="post" action="{{ url_for('sales.delete_sale', sale_id=sale.id) }}" onsubmit="return confirm('Delete this sale?');">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-5">No sales found.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

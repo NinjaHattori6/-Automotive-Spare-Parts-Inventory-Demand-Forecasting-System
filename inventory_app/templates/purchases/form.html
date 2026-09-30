@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Purchases · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Procurement</p>
+    <h1 class="h2 mb-0">Purchases</h1>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('purchases.create_purchase') }}">Create Purchase</a>
+</div>
+
+<div class="table-responsive panel-card">
+  <table class="table table-hover align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Supplier</th>
+        <th>Quantity</th>
+        <th>Unit Cost</th>
+        <th>Total Cost</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if purchases %}
+        {% for purchase in purchases %}
+        <tr>
+          <td>{{ purchase.product.product_name if purchase.product else 'Unknown' }}</td>
+          <td>{{ purchase.supplier.supplier_name if purchase.supplier else 'Unknown' }}</td>
+          <td>{{ purchase.quantity }}</td>
+          <td>${{ '%.2f'|format(purchase.unit_cost) }}</td>
+          <td>${{ '%.2f'|format(purchase.total_cost) }}</td>
+          <td><span class="badge {% if purchase.status == 'Received' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ purchase.status }}</span></td>
+          <td>
+            {% if purchase.status != 'Received' %}
+              <form method="post" action="{{ url_for('purchases.receive_purchase', purchase_id=purchase.id) }}">
+                <button class="btn btn-sm btn-outline-success" type="submit">Mark Received</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No purchases recorded yet.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

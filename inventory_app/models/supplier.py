@@ -3,25 +3,44 @@ from datetime import datetime, timezone
 from inventory_app.extensions import db
 
 
-class Supplier(db.Model):
-    __tablename__ = "suppliers"
+class Product(db.Model):
+    __tablename__ = "products"
 
     id = db.Column(db.Integer, primary_key=True)
-    supplier_name = db.Column(db.String(150), nullable=False, index=True)
-    contact_person = db.Column(db.String(120))
-    email = db.Column(db.String(255))
-    phone = db.Column(db.String(40))
-    address = db.Column(db.Text)
-    lead_time_days = db.Column(db.Integer, nullable=False, default=0)
+    product_name = db.Column(db.String(150), nullable=False, index=True)
+    part_number = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    category = db.Column(db.String(100), nullable=False, index=True)
+    brand = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    unit_price = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    current_stock = db.Column(db.Integer, nullable=False, default=0)
+    minimum_stock = db.Column(db.Integer, nullable=False, default=0)
+    reorder_level = db.Column(db.Integer, nullable=False, default=0)
+    supplier_id = db.Column(
+        db.Integer, db.ForeignKey("suppliers.id"), nullable=True, index=True
+    )
     created_at = db.Column(
         db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
-    products = db.relationship("Product", back_populates="supplier", lazy=True)
+    supplier = db.relationship("Supplier", back_populates="products")
+    sales = db.relationship("Sale", back_populates="product", cascade="all, delete-orphan")
+    purchases = db.relationship("Purchase", back_populates="product", cascade="all, delete-orphan")
 
     __table_args__ = (
-        db.CheckConstraint("lead_time_days >= 0", name="ck_supplier_lead_time_positive"),
+        db.CheckConstraint("unit_price >= 0", name="ck_product_unit_price_positive"),
+        db.CheckConstraint("current_stock >= 0", name="ck_product_stock_positive"),
+        db.CheckConstraint("minimum_stock >= 0", name="ck_product_minimum_stock_positive"),
+        db.CheckConstraint("reorder_level >= 0", name="ck_product_reorder_level_positive"),
     )
 
+    @property
+    def stock_status(self) -> str:
+        if self.current_stock == 0:
+            return "Out of stock"
+        if self.current_stock <= self.reorder_level:
+            return "Low stock"
+        return "In stock"
+
     def __repr__(self) -> str:
-        return f"<Supplier {self.supplier_name!r}>"
+        return f"<Product {self.part_number!r}>"

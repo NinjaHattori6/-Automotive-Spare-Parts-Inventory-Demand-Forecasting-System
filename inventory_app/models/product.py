@@ -3,42 +3,26 @@ from datetime import datetime, timezone
 from inventory_app.extensions import db
 
 
-class Product(db.Model):
-    __tablename__ = "products"
+class Purchase(db.Model):
+    __tablename__ = "purchases"
 
     id = db.Column(db.Integer, primary_key=True)
-    product_name = db.Column(db.String(150), nullable=False, index=True)
-    part_number = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    category = db.Column(db.String(100), nullable=False, index=True)
-    brand = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    unit_price = db.Column(db.Numeric(12, 2), nullable=False, default=0)
-    current_stock = db.Column(db.Integer, nullable=False, default=0)
-    minimum_stock = db.Column(db.Integer, nullable=False, default=0)
-    reorder_level = db.Column(db.Integer, nullable=False, default=0)
-    supplier_id = db.Column(
-        db.Integer, db.ForeignKey("suppliers.id"), nullable=True, index=True
-    )
-    created_at = db.Column(
-        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
-    )
+    supplier_id = db.Column(db.Integer, db.ForeignKey("suppliers.id"), nullable=False, index=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False, index=True)
+    quantity = db.Column(db.Integer, nullable=False)
+    unit_cost = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total_cost = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    purchase_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    status = db.Column(db.String(30), nullable=False, default="Pending")
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    supplier = db.relationship("Supplier", back_populates="products")
+    supplier = db.relationship("Supplier", back_populates="purchases")
+    product = db.relationship("Product", back_populates="purchases")
 
     __table_args__ = (
-        db.CheckConstraint("unit_price >= 0", name="ck_product_unit_price_positive"),
-        db.CheckConstraint("current_stock >= 0", name="ck_product_stock_positive"),
-        db.CheckConstraint("minimum_stock >= 0", name="ck_product_minimum_stock_positive"),
-        db.CheckConstraint("reorder_level >= 0", name="ck_product_reorder_level_positive"),
+        db.CheckConstraint("quantity > 0", name="ck_purchase_quantity_positive"),
+        db.CheckConstraint("total_cost >= 0", name="ck_purchase_total_non_negative"),
     )
 
-    @property
-    def stock_status(self) -> str:
-        if self.current_stock == 0:
-            return "Out of stock"
-        if self.current_stock <= self.reorder_level:
-            return "Low stock"
-        return "In stock"
-
-    def __repr__(self) -> str:
-        return f"<Product {self.part_number!r}>"
+    def __repr__(self):
+        return f"<Purchase {self.id}>"

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Operations overview</p>
+    <h1 class="h2 mb-0">Inventory dashboard</h1>
+  </div>
+  <span class="badge text-bg-light border">Stage 3</span>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Products</span><strong>{{ product_count }}</strong><small>Managed parts</small></div></div>
+  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Suppliers</span><strong>{{ supplier_count }}</strong><small>Vendor records</small></div></div>
+  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Inventory units</span><strong>{{ total_inventory_units }}</strong><small>On hand</small></div></div>
+  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Inventory value</span><strong>${{ '%.2f'|format(total_inventory_value) }}</strong><small>Estimated value</small></div></div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6"><div class="metric-card"><span class="metric-label">Today's sales</span><strong>${{ '%.2f'|format(todays_sales) }}</strong><small>Current daily revenue</small></div></div>
+  <div class="col-md-6"><div class="metric-card"><span class="metric-label">Top products</span><strong>{{ top_products[0][1] if top_products else 0 }}</strong><small>Units sold this period</small></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="panel-card">
+      <h2 class="h5 mb-3">Recent sales</h2>
+      {% if recent_sales %}
+      <div class="list-group list-group-flush">
+        {% for sale in recent_sales %}
+        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+          <div>
+            <div class="fw-semibold">{{ sale.product.product_name if sale.product else 'Unknown product' }}</div>
+            <small class="text-muted">{{ sale.sale_date.strftime('%Y-%m-%d') if sale.sale_date else 'Unknown date' }}</small>
+          </div>
+          <span class="badge bg-primary">{{ sale.quantity }} units</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted mb-0">No sales recorded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="panel-card">
+      <h2 class="h5 mb-3">Top-selling products</h2>
+      {% if top_products %}
+      <div class="list-group list-group-flush">
+        {% for product_name, units_sold in top_products %}
+        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+          <span>{{ product_name }}</span>
+          <span class="badge bg-success">{{ units_sold }} sold</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted mb-0">No product sales yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
