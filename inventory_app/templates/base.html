@@ -1,36 +1,50 @@
-from flask import Blueprint, render_template
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AutoParts IQ{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{{ url_for('dashboard.index') }}">AutoParts IQ</a>
+    {% if current_user %}
+    <div class="d-flex align-items-center gap-3 ms-auto flex-wrap">
+      <a class="nav-link text-white" href="{{ url_for('dashboard.index') }}">Dashboard</a>
+      <a class="nav-link text-white" href="{{ url_for('products.index') }}">Products</a>
+      <a class="nav-link text-white" href="{{ url_for('suppliers.index') }}">Suppliers</a>
+      <a class="nav-link text-white" href="{{ url_for('sales.index') }}">Sales</a>
+      <a class="nav-link text-white" href="{{ url_for('purchases.index') }}">Purchases</a>
+      <a class="nav-link text-white" href="{{ url_for('analytics.index') }}">Analytics</a>
+      <span class="text-white-50 small">{{ current_user.username }}</span>
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+    {% endif %}
+  </div>
+</nav>
 
-from inventory_app.extensions import db
-from inventory_app.models import Product, Purchase, Sale, Supplier, User
-from inventory_app.routes.auth import login_required
+<main class="container py-4">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-4">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
-bp = Blueprint("dashboard", __name__)
+  {% block content %}{% endblock %}
+</main>
 
-
-@bp.get("/")
-@login_required
-def index():
-    today = db.func.date('now')
-    return render_template(
-        "dashboard.html",
-        user_count=db.session.scalar(db.select(db.func.count(User.id))) or 0,
-        product_count=db.session.scalar(db.select(db.func.count(Product.id))) or 0,
-        supplier_count=db.session.scalar(db.select(db.func.count(Supplier.id))) or 0,
-        total_inventory_units=db.session.scalar(db.select(db.func.coalesce(db.func.sum(Product.current_stock), 0))) or 0,
-        total_inventory_value=db.session.scalar(
-            db.select(db.func.coalesce(db.func.sum(Product.current_stock * Product.unit_price), 0))
-        ) or 0,
-        todays_sales=db.session.scalar(
-            db.select(db.func.coalesce(db.func.sum(Sale.total_amount), 0)).where(db.func.date(Sale.sale_date) == today)
-        ) or 0,
-        recent_sales=db.session.execute(
-            db.select(Sale).order_by(Sale.sale_date.desc()).limit(5)
-        ).scalars().all(),
-        top_products=db.session.execute(
-            db.select(Product.product_name, db.func.sum(Sale.quantity).label("units_sold"))
-            .join(Sale, Product.id == Sale.product_id)
-            .group_by(Product.product_name)
-            .order_by(db.func.sum(Sale.quantity).desc())
-            .limit(5)
-        ).all(),
-    )
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
