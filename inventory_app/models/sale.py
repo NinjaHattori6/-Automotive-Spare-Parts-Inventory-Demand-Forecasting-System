@@ -1,74 +1,25 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from datetime import datetime, timezone
 
 from inventory_app.extensions import db
-from inventory_app.models import Product, Purchase, Supplier
-from inventory_app.routes.auth import login_required
-
-bp = Blueprint("purchases", __name__, url_prefix="/purchases")
 
 
-@bp.get("/")
-@login_required
-def index():
-    purchases = db.session.execute(
-        db.select(Purchase).order_by(Purchase.purchase_date.desc(), Purchase.id.desc())
-    ).scalars().all()
-    return render_template("purchases/index.html", purchases=purchases)
+class Sale(db.Model):
+    __tablename__ = "sales"
 
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False, index=True)
+    quantity = db.Column(db.Integer, nullable=False)
+    unit_price = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    total_amount = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    sale_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-@bp.route("/new", methods=["GET", "POST"])
-@login_required
-def create_purchase():
-    products = db.session.execute(db.select(Product).order_by(Product.product_name.asc())).scalars().all()
-    suppliers = db.session.execute(db.select(Supplier).order_by(Supplier.supplier_name.asc())).scalars().all()
+    product = db.relationship("Product", back_populates="sales")
 
-    if request.method == "POST":
-        supplier_id = request.form.get("supplier_id", type=int)
-        product_id = request.form.get("product_id", type=int)
-        quantity = request.form.get("quantity", type=int)
-        unit_cost = request.form.get("unit_cost", type=float)
-        purchase_date = request.form.get("purchase_date") or None
-        status = request.form.get("status", "Pending")
+    __table_args__ = (
+        db.CheckConstraint("quantity > 0", name="ck_sale_quantity_positive"),
+        db.CheckConstraint("total_amount >= 0", name="ck_sale_total_non_negative"),
+    )
 
-        if not supplier_id or not product_id:
-            flash("Please select a supplier and product.", "danger")
-        elif quantity is None or quantity <= 0:
-            flash("Quantity must be greater than zero.", "danger")
-        elif unit_cost is None or unit_cost <= 0:
-            flash("Unit cost must be greater than zero.", "danger")
-        else:
-            total_cost = quantity * unit_cost
-            product = db.session.get(Product, product_id)
-            purchase = Purchase(
-                supplier_id=supplier_id,
-                product_id=product_id,
-                quantity=quantity,
-                unit_cost=unit_cost,
-                total_cost=total_cost,
-                purchase_date=purchase_date or None,
-                status=status,
-            )
-            db.session.add(purchase)
-            if status.lower() == "received":
-                product.current_stock += quantity
-            db.session.commit()
-            flash("Purchase order recorded successfully.", "success")
-            return redirect(url_for("purchases.index"))
-
-    return render_template("purchases/form.html", suppliers=suppliers, products=products, purchase=None, action="Create")
-
-
-@bp.route("/<int:purchase_id>/receive", methods=["POST"])
-@login_required
-def receive_purchase(purchase_id):
-    purchase = db.session.get(Purchase, purchase_id)
-    if purchase is None:
-        flash("Purchase not found.", "warning")
-        return redirect(url_for("purchases.index"))
-
-    if purchase.product is not None:
-        purchase.product.current_stock += purchase.quantity
-    purchase.status = "Received"
-    db.session.commit()
-    flash("Purchase received and inventory updated.", "success")
-    return redirect(url_for("purchases.index"))
+    def __repr__(self):
+        return f"<Sale {self.id}>"

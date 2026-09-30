@@ -1,43 +1,6 @@
 {% extends "base.html" %}
-{% block title %}{{ action }} Sale · AutoParts IQ{% endblock %}
+{% block title %}Purchases · AutoParts IQ{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7">
-    <div class="panel-card">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <p class="text-uppercase text-primary small fw-bold mb-1">Sales entry</p>
-          <h1 class="h2 mb-0">{{ action }} Sale</h1>
-        </div>
-        <a class="btn btn-outline-secondary" href="{{ url_for('sales.index') }}">Back</a>
-      </div>
-
-      <form method="post">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label">Product</label>
-            <select class="form-select" name="product_id" required>
-              <option value="">Select product</option>
-              {% for product in products %}
-                <option value="{{ product.id }}">{{ product.product_name }} ({{ product.current_stock }} in stock)</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Sale date</label>
-            <input class="form-control" type="date" name="sale_date" value="{{ today }}">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Quantity</label>
-            <input class="form-control" type="number" min="1" name="quantity" required>
-          </div>
-        </div>
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <a class="btn btn-outline-secondary" href="{{ url_for('sales.index') }}">Cancel</a>
-          <button class="btn btn-primary" type="submit">Save Sale</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+<div class="d-flex justify-content-between align-items-center mb-4"><div><p class="text-uppercase text-primary small fw-bold mb-1">Procurement</p><h1 class="h2 mb-0">Purchases</h1></div><a class="btn btn-primary" href="{{ url_for('purchases.create_purchase') }}">Create Purchase</a></div>
+<div class="table-responsive panel-card"><table class="table table-hover align-middle mb-0"><thead><tr><th>Date</th><th>Product</th><th>Supplier</th><th>Qty</th><th>Unit Cost</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>{% for purchase in purchases %}<tr><td>{{ purchase.purchase_date.strftime('%Y-%m-%d') }}</td><td>{{ purchase.product.product_name if purchase.product else 'Unknown' }}</td><td>{{ purchase.supplier.supplier_name if purchase.supplier else 'Unknown' }}</td><td>{{ purchase.quantity }}</td><td>${{ '%.2f'|format(purchase.unit_cost|float) }}</td><td>${{ '%.2f'|format(purchase.total_cost|float) }}</td><td>{{ purchase.status }}</td><td class="text-end">{% if purchase.status|lower != 'received' %}<form method="post" action="{{ url_for('purchases.receive_purchase', purchase_id=purchase.id) }}"><button class="btn btn-sm btn-outline-success">Receive</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="8" class="text-center py-4 text-muted">No purchases found.</td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}

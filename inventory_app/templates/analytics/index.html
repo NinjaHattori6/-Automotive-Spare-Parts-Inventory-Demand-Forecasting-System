@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Analytics · AutoParts IQ{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div><p class="text-uppercase text-primary small fw-bold mb-1">Stage 4 Analytics</p><h1 class="h2 mb-0">Sales and inventory analytics</h1></div>
+  <a class="btn btn-outline-primary" href="{{ url_for('analytics.export_csv', start_date=start_date, end_date=end_date) }}">Export CSV</a>
+</div>
+
+<div class="panel-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-4"><label class="form-label">Start date</label><input class="form-control" type="date" name="start_date" value="{{ start_date }}"></div>
+    <div class="col-md-4"><label class="form-label">End date</label><input class="form-control" type="date" name="end_date" value="{{ end_date }}"></div>
+    <div class="col-md-4 d-flex gap-2"><button class="btn btn-primary w-100" type="submit">Apply</button><a class="btn btn-outline-secondary" href="{{ url_for('analytics.index') }}">Reset</a></div>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4 col-lg-2"><div class="metric-card"><span class="metric-label">Revenue</span><strong>${{ '%.2f'|format(analytics.summary.total_revenue) }}</strong><small>Total revenue</small></div></div>
+  <div class="col-md-4 col-lg-2"><div class="metric-card"><span class="metric-label">Units sold</span><strong>{{ analytics.summary.units_sold }}</strong><small>Total units</small></div></div>
+  <div class="col-md-4 col-lg-2"><div class="metric-card"><span class="metric-label">Avg order</span><strong>${{ '%.2f'|format(analytics.summary.average_order_value) }}</strong><small>Per sale</small></div></div>
+  <div class="col-md-4 col-lg-2"><div class="metric-card"><span class="metric-label">Best seller</span><strong class="fs-6">{{ analytics.summary.best_selling_product }}</strong><small>Top product</small></div></div>
+  <div class="col-md-4 col-lg-2"><div class="metric-card"><span class="metric-label">Slow moving</span><strong>{{ analytics.summary.slow_moving_product_count }}</strong><small>Products</small></div></div>
+  <div class="col-md-4 col-lg-2"><div class="metric-card"><span class="metric-label">Active products</span><strong>{{ analytics.summary.active_product_count }}</strong><small>Stock > 0</small></div></div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8"><div class="panel-card"><h2 class="h5">Daily revenue and moving averages</h2><canvas id="dailyTrendChart" height="120"></canvas></div></div>
+  <div class="col-lg-4"><div class="panel-card"><h2 class="h5">Top-selling products</h2><canvas id="topProductsChart" height="160"></canvas></div></div>
+  <div class="col-lg-6"><div class="panel-card"><h2 class="h5">Monthly revenue trend</h2><canvas id="monthlyRevenueChart" height="140"></canvas></div></div>
+  <div class="col-lg-6"><div class="panel-card"><h2 class="h5">Category performance</h2><canvas id="categoryChart" height="140"></canvas></div></div>
+  <div class="col-lg-6"><div class="panel-card"><h2 class="h5">Inventory stock status distribution</h2><canvas id="inventoryChart" height="140"></canvas></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script>
+const dailySales = {{ analytics.daily_sales|tojson }};
+const monthlySales = {{ analytics.monthly_sales|tojson }};
+const topProducts = {{ analytics.top_products|tojson }};
+const categoryPerformance = {{ analytics.category_performance|tojson }};
+const inventoryDistribution = {{ analytics.inventory_distribution|tojson }};
+
+new Chart(document.getElementById('dailyTrendChart'), {
+  type: 'line',
+  data: {
+    labels: dailySales.map(r => r.date),
+    datasets: [
+      { label: 'Revenue', data: dailySales.map(r => r.revenue), borderColor: '#0d6efd', yAxisID: 'y' },
+      { label: '7-day MA', data: dailySales.map(r => r.ma_7), borderColor: '#20c997', borderDash: [5,5], yAxisID: 'y' },
+      { label: '30-day MA', data: dailySales.map(r => r.ma_30), borderColor: '#6f42c1', borderDash: [4,4], yAxisID: 'y' },
+      { label: 'Units', data: dailySales.map(r => r.units), borderColor: '#fd7e14', yAxisID: 'y1' }
+    ]
+  },
+  options: { responsive: true, scales: { y: { position: 'left' }, y1: { position: 'right', grid: { drawOnChartArea: false } } } }
+});
+
+new Chart(document.getElementById('monthlyRevenueChart'), {
+  type: 'bar',
+  data: { labels: monthlySales.map(r => r.month), datasets: [{ label: 'Revenue', data: monthlySales.map(r => r.revenue), backgroundColor: '#0d6efd' }] },
+  options: { responsive: true }
+});
+
+new Chart(document.getElementById('topProductsChart'), {
+  type: 'bar',
+  data: { labels: topProducts.map(r => r.product_name), datasets: [{ label: 'Units', data: topProducts.map(r => r.units), backgroundColor: '#198754' }] },
+  options: { indexAxis: 'y', responsive: true }
+});
+
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: { labels: categoryPerformance.map(r => r.category), datasets: [{ label: 'Revenue', data: categoryPerformance.map(r => r.revenue) }] },
+  options: { responsive: true }
+});
+
+new Chart(document.getElementById('inventoryChart'), {
+  type: 'pie',
+  data: { labels: inventoryDistribution.map(r => r.status), datasets: [{ data: inventoryDistribution.map(r => r.count) }] },
+  options: { responsive: true }
+});
+</script>
+{% endblock %}
