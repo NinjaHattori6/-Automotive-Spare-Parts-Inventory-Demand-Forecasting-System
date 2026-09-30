@@ -1,55 +1,34 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · AutoParts IQ{% endblock %}
+{% block title %}Products · AutoParts IQ{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <p class="text-uppercase text-primary small fw-bold mb-1">Operations overview</p>
-    <h1 class="h2 mb-0">Inventory dashboard</h1>
+    <p class="text-uppercase text-primary small fw-bold mb-1">Catalog management</p>
+    <h1 class="h2 mb-0">Products</h1>
   </div>
-  <span class="badge text-bg-light border">Stage 2</span>
+  <a class="btn btn-primary" href="{{ url_for('products.create_product') }}">Add Product</a>
 </div>
-
-<div class="row g-4">
-  <div class="col-md-4">
-    <div class="metric-card">
-      <span class="metric-label">Products</span>
-      <strong>{{ product_count }}</strong>
-      <small>Managed parts</small>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="metric-card">
-      <span class="metric-label">Suppliers</span>
-      <strong>{{ supplier_count }}</strong>
-      <small>Active vendors</small>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="metric-card">
-      <span class="metric-label">Users</span>
-      <strong>{{ user_count }}</strong>
-      <small>Authorized team members</small>
-    </div>
-  </div>
+<div class="panel-card mb-4">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-5"><label class="form-label">Search</label><input class="form-control" type="text" name="q" value="{{ search }}" placeholder="Product name, part number, brand"></div>
+    <div class="col-md-4"><label class="form-label">Category</label><select class="form-select" name="category"><option value="">All categories</option>{% for c in categories %}<option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary w-100" type="submit">Apply</button><a class="btn btn-outline-secondary" href="{{ url_for('products.index') }}">Clear</a></div>
+  </form>
 </div>
-
-<div class="row mt-4 g-3">
-  <div class="col-lg-6">
-    <div class="panel-card">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h5 mb-0">Quick actions</h2>
-      </div>
-      <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-primary" href="{{ url_for('products.create_product') }}">Add Product</a>
-        <a class="btn btn-outline-primary" href="{{ url_for('suppliers.create_supplier') }}">Add Supplier</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="panel-card">
-      <h2 class="h5 mb-3">Current focus</h2>
-      <p class="text-muted mb-0">This stage adds product and supplier management, with stock indicators and search/filter controls for the automotive inventory workflow.</p>
-    </div>
-  </div>
+<div class="table-responsive panel-card">
+  <table class="table table-hover align-middle mb-0">
+    <thead><tr><th>Product</th><th>Part #</th><th>Category</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for product in products %}
+      <tr>
+        <td>{{ product.product_name }}</td><td>{{ product.part_number }}</td><td>{{ product.category }}</td><td>{{ product.current_stock }}</td>
+        <td><span class="badge {% if product.stock_status == 'In stock' %}text-bg-success{% elif product.stock_status == 'Low stock' %}text-bg-warning{% else %}text-bg-danger{% endif %}">{{ product.stock_status }}</span></td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('products.product_detail', product_id=product.id) }}">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center py-4 text-muted">No products found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

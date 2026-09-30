@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from functools import wraps
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
@@ -11,7 +11,7 @@ bp = Blueprint("auth", __name__)
 
 
 def login_required(view):
-    @staticmethod
+    @wraps(view)
     def wrapped_view(*args, **kwargs):
         if session.get("user_id") is None:
             flash("Please log in to continue.", "warning")
@@ -39,9 +39,7 @@ def register():
             errors.append("Passwords do not match.")
         if len(password) < 8:
             errors.append("Password must contain at least 8 characters.")
-        if db.session.execute(
-            db.select(User).where(or_(User.username == username, User.email == email))
-        ).scalar_one_or_none():
+        if db.session.execute(db.select(User).where(or_(User.username == username, User.email == email))).scalar_one_or_none():
             errors.append("That username or email is already registered.")
 
         if not errors:

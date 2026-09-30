@@ -1,63 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Dashboard · AutoParts IQ{% endblock %}
+{% block title %}Sales · AutoParts IQ{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <p class="text-uppercase text-primary small fw-bold mb-1">Operations overview</p>
-    <h1 class="h2 mb-0">Inventory dashboard</h1>
-  </div>
-  <span class="badge text-bg-light border">Stage 3</span>
-</div>
-
-<div class="row g-4 mb-4">
-  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Products</span><strong>{{ product_count }}</strong><small>Managed parts</small></div></div>
-  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Suppliers</span><strong>{{ supplier_count }}</strong><small>Vendor records</small></div></div>
-  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Inventory units</span><strong>{{ total_inventory_units }}</strong><small>On hand</small></div></div>
-  <div class="col-md-3"><div class="metric-card"><span class="metric-label">Inventory value</span><strong>${{ '%.2f'|format(total_inventory_value) }}</strong><small>Estimated value</small></div></div>
-</div>
-
-<div class="row g-4 mb-4">
-  <div class="col-md-6"><div class="metric-card"><span class="metric-label">Today's sales</span><strong>${{ '%.2f'|format(todays_sales) }}</strong><small>Current daily revenue</small></div></div>
-  <div class="col-md-6"><div class="metric-card"><span class="metric-label">Top products</span><strong>{{ top_products[0][1] if top_products else 0 }}</strong><small>Units sold this period</small></div></div>
-</div>
-
-<div class="row g-4">
-  <div class="col-lg-6">
-    <div class="panel-card">
-      <h2 class="h5 mb-3">Recent sales</h2>
-      {% if recent_sales %}
-      <div class="list-group list-group-flush">
-        {% for sale in recent_sales %}
-        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-          <div>
-            <div class="fw-semibold">{{ sale.product.product_name if sale.product else 'Unknown product' }}</div>
-            <small class="text-muted">{{ sale.sale_date.strftime('%Y-%m-%d') if sale.sale_date else 'Unknown date' }}</small>
-          </div>
-          <span class="badge bg-primary">{{ sale.quantity }} units</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <p class="text-muted mb-0">No sales recorded yet.</p>
-      {% endif %}
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="panel-card">
-      <h2 class="h5 mb-3">Top-selling products</h2>
-      {% if top_products %}
-      <div class="list-group list-group-flush">
-        {% for product_name, units_sold in top_products %}
-        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-          <span>{{ product_name }}</span>
-          <span class="badge bg-success">{{ units_sold }} sold</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <p class="text-muted mb-0">No product sales yet.</p>
-      {% endif %}
-    </div>
-  </div>
-</div>
+<div class="d-flex justify-content-between align-items-center mb-4"><div><p class="text-uppercase text-primary small fw-bold mb-1">Sales operations</p><h1 class="h2 mb-0">Sales</h1></div><a class="btn btn-primary" href="{{ url_for('sales.create_sale') }}">Record Sale</a></div>
+<div class="panel-card mb-4"><form method="get" class="row g-3 align-items-end"><div class="col-md-8"><label class="form-label">Filter by product</label><select class="form-select" name="product_id"><option value="">All products</option>{% for product in products %}<option value="{{ product.id }}" {% if selected_product_id == product.id %}selected{% endif %}>{{ product.product_name }}</option>{% endfor %}</select></div><div class="col-md-4 d-flex gap-2"><button class="btn btn-primary w-100" type="submit">Apply</button><a class="btn btn-outline-secondary" href="{{ url_for('sales.index') }}">Clear</a></div></form></div>
+<div class="table-responsive panel-card"><table class="table table-hover align-middle mb-0"><thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead><tbody>{% for sale in sales %}<tr><td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td><td>{{ sale.product.product_name if sale.product else 'Unknown' }}</td><td>{{ sale.quantity }}</td><td>${{ '%.2f'|format(sale.unit_price|float) }}</td><td>${{ '%.2f'|format(sale.total_amount|float) }}</td><td class="text-end"><form method="post" action="{{ url_for('sales.delete_sale', sale_id=sale.id) }}" onsubmit="return confirm('Delete this sale?');"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td></tr>{% else %}<tr><td colspan="6" class="text-center py-4 text-muted">No sales found.</td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}
