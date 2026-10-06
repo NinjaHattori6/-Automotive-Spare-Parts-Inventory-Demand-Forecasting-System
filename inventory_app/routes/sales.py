@@ -12,7 +12,10 @@ bp = Blueprint("sales", __name__, url_prefix="/sales")
 def _parse_date_input(value: str | None) -> datetime | None:
     if not value:
         return None
-    parsed = datetime.fromisoformat(value)
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
     return datetime(parsed.year, parsed.month, parsed.day, tzinfo=timezone.utc)
 
 
@@ -36,13 +39,16 @@ def create_sale():
     if request.method == "POST":
         product_id = request.form.get("product_id", type=int)
         quantity = request.form.get("quantity", type=int)
-        sale_date = _parse_date_input(request.form.get("sale_date"))
+        sale_date_raw = request.form.get("sale_date")
+        sale_date = _parse_date_input(sale_date_raw)
         product = db.session.get(Product, product_id)
 
         if not product:
             flash("Please select a valid product.", "danger")
         elif quantity is None or quantity <= 0:
             flash("Sale quantity must be greater than zero.", "danger")
+        elif sale_date_raw and sale_date is None:
+            flash("Sale date is invalid. Please use YYYY-MM-DD.", "danger")
         elif quantity > product.current_stock:
             flash("Not enough stock available for this sale.", "danger")
         else:

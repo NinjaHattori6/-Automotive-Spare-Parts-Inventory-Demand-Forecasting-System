@@ -12,7 +12,10 @@ bp = Blueprint("purchases", __name__, url_prefix="/purchases")
 def _parse_date_input(value: str | None) -> datetime | None:
     if not value:
         return None
-    parsed = datetime.fromisoformat(value)
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
     return datetime(parsed.year, parsed.month, parsed.day, tzinfo=timezone.utc)
 
 
@@ -34,7 +37,8 @@ def create_purchase():
         product_id = request.form.get("product_id", type=int)
         quantity = request.form.get("quantity", type=int)
         unit_cost = request.form.get("unit_cost", type=float)
-        purchase_date = _parse_date_input(request.form.get("purchase_date"))
+        purchase_date_raw = request.form.get("purchase_date")
+        purchase_date = _parse_date_input(purchase_date_raw)
         status = request.form.get("status", "Pending")
 
         if not supplier_id or not product_id:
@@ -43,6 +47,8 @@ def create_purchase():
             flash("Quantity must be greater than zero.", "danger")
         elif unit_cost is None or unit_cost <= 0:
             flash("Unit cost must be greater than zero.", "danger")
+        elif purchase_date_raw and purchase_date is None:
+            flash("Purchase date is invalid. Please use YYYY-MM-DD.", "danger")
         else:
             total_cost = quantity * unit_cost
             product = db.session.get(Product, product_id)
@@ -75,7 +81,11 @@ def receive_purchase(purchase_id):
 
     if purchase.product is not None and purchase.status.lower() != "received":
         purchase.product.current_stock += purchase.quantity
+        flash("Purchase received and inventory updated.", "success")
+    elif purchase.status.lower() == "received":
+        flash("Purchase was already received; inventory was not updated again.", "info")
+    else:
+        flash("Purchase marked as received.", "success")
     purchase.status = "Received"
     db.session.commit()
-    flash("Purchase received and inventory updated.", "success")
     return redirect(url_for("purchases.index"))

@@ -3,7 +3,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div><p class="text-uppercase text-primary small fw-bold mb-1">Stage 4 Analytics</p><h1 class="h2 mb-0">Sales and inventory analytics</h1></div>
-  <a class="btn btn-outline-primary" href="{{ url_for('analytics.export_csv', start_date=start_date, end_date=end_date) }}">Export CSV</a>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('analytics.export_csv', start_date=start_date, end_date=end_date) }}">Export Sales CSV</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('analytics.export_forecast_csv', start_date=start_date, end_date=end_date) }}">Export Forecast CSV</a>
+  </div>
 </div>
 
 <div class="panel-card mb-4">
@@ -29,6 +32,40 @@
   <div class="col-lg-6"><div class="panel-card"><h2 class="h5">Monthly revenue trend</h2><canvas id="monthlyRevenueChart" height="140"></canvas></div></div>
   <div class="col-lg-6"><div class="panel-card"><h2 class="h5">Category performance</h2><canvas id="categoryChart" height="140"></canvas></div></div>
   <div class="col-lg-6"><div class="panel-card"><h2 class="h5">Inventory stock status distribution</h2><canvas id="inventoryChart" height="140"></canvas></div></div>
+</div>
+
+<div class="panel-card mt-4">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h2 class="h5 mb-1">Demand forecast (next {{ analytics.forecast.horizon_weeks }} weeks)</h2>
+      <p class="text-muted mb-0 small">{{ analytics.forecast.model_name }} · seasonal period {{ analytics.forecast.seasonal_period_weeks }} weeks</p>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('analytics.forecast_json', start_date=start_date, end_date=end_date) }}">JSON</a>
+  </div>
+  {% if analytics.forecast.rows %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Product</th><th>Week start</th><th class="text-end">Forecast units</th><th class="text-end">History weeks</th></tr></thead>
+      <tbody>
+        {% for row in analytics.forecast.rows %}
+        <tr>
+          <td>{{ row.product_name }}</td>
+          <td>{{ row.week_start }}</td>
+          <td class="text-end">{{ row.forecast_units }}</td>
+          <td class="text-end">{{ row.history_weeks }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted mb-0">No products available for forecasting.</p>
+  {% endif %}
+  <ul class="small text-muted mb-0 mt-3">
+    {% for limitation in analytics.forecast.limitations %}
+    <li>{{ limitation }}</li>
+    {% endfor %}
+  </ul>
 </div>
 {% endblock %}
 

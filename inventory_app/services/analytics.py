@@ -10,6 +10,9 @@ from sqlalchemy import func
 from inventory_app.extensions import db
 from inventory_app.models import Product, Sale
 
+FORECAST_HORIZON_WEEKS = 4
+FORECAST_SEASONAL_PERIOD_WEEKS = 4
+
 
 @dataclass
 class DateRange:
@@ -64,6 +67,11 @@ def get_sales_dataframe(date_range: DateRange | None = None) -> pd.DataFrame:
     if date_range and date_range.end_date:
         df = df[df["sale_date"].dt.date <= date_range.end_date]
     return df.sort_values("sale_date")
+
+
+def _week_start_series(sale_dates: pd.Series) -> pd.Series:
+    normalized = sale_dates.dt.tz_convert("UTC").dt.floor("D")
+    return normalized - pd.to_timedelta(normalized.dt.weekday, unit="D")
 
 
 def _group_sales(df: pd.DataFrame, freq: str) -> pd.DataFrame:
@@ -215,6 +223,118 @@ def analytics_summary(df: pd.DataFrame) -> dict:
     }
 
 
+def _seasonal_naive_forecast(history_values: list[float], horizon_weeks: int, seasonal_period_weeks: int) -> list[float]:
+    history = [max(float(value), 0.0) for value in history_values]
+    if not history:
+        return [0.0 for _ in range(horizon_weeks)]
+
+    forecasts: list[float] = []
+    for _ in range(horizon_weeks):
+        if len(history) >= seasonal_period_weeks:
+            next_value = history[-seasonal_period_weeks]
+        else:
+            next_value = sum(history) / len(history)
+        next_value = max(next_value, 0.0)
+        forecasts.append(next_value)
+        history.append(next_value)
+    return forecasts
+
+
+def _seasonal_naive_mae(history_values: list[float], seasonal_period_weeks: int) -> float | None:
+    if len(history_values) <= seasonal_period_weeks:
+        return None
+    errors = [
+        abs(float(history_values[index]) - float(history_values[index - seasonal_period_weeks]))
+        for index in range(seasonal_period_weeks, len(history_values))
+    ]
+    if not errors:
+        return None
+    return round(sum(errors) / len(errors), 2)
+
+
+def demand_forecast(
+    df: pd.DataFrame,
+    horizon_weeks: int = FORECAST_HORIZON_WEEKS,
+    seasonal_period_weeks: int = FORECAST_SEASONAL_PERIOD_WEEKS,
+) -> dict:
+    products = db.session.execute(db.select(Product.id, Product.product_name).order_by(Product.product_name.asc())).all()
+    generated_at = pd.Timestamp.now(tz="UTC")
+    current_week_start = generated_at.normalize() - pd.to_timedelta(generated_at.weekday(), unit="D")
+
+    if df.empty:
+        weekly = pd.DataFrame(columns=["product_id", "week_start", "units"])
+    else:
+        weekly = (
+            df.assign(week_start=_week_start_series(df["sale_date"]))
+            .groupby(["product_id", "week_start"], as_index=False)["quantity"]
+            .sum()
+            .rename(columns={"quantity": "units"})
+        )
+
+    forecast_products = []
+    forecast_rows = []
+    for product in products:
+        product_weeks = weekly[weekly["product_id"] == product.id].sort_values("week_start")
+        if product_weeks.empty:
+            history = pd.Series(dtype=float)
+            last_observed_week = None
+        else:
+            product_series = product_weeks.set_index("week_start")["units"].astype(float)
+            full_index = pd.date_range(
+                start=product_series.index.min(),
+                end=product_series.index.max(),
+                freq="W-MON",
+            )
+            history = product_series.reindex(full_index, fill_value=0.0)
+            last_observed_week = history.index.max()
+
+        anchor_week = max(current_week_start, last_observed_week) if last_observed_week is not None else current_week_start
+        future_weeks = [anchor_week + pd.DateOffset(weeks=step) for step in range(1, horizon_weeks + 1)]
+        history_values = history.tolist()
+        forecast_values = _seasonal_naive_forecast(history_values, horizon_weeks, seasonal_period_weeks)
+        backtest_mae = _seasonal_naive_mae(history_values, seasonal_period_weeks)
+
+        week_rows = []
+        for week_start, forecast_value in zip(future_weeks, forecast_values):
+            row = {
+                "product_id": int(product.id),
+                "product_name": product.product_name,
+                "week_start": week_start.strftime("%Y-%m-%d"),
+                "forecast_units": int(round(forecast_value)),
+                "history_weeks": int(len(history_values)),
+                "has_sales_history": bool(history_values),
+                "backtest_mae": backtest_mae,
+            }
+            week_rows.append(row)
+            forecast_rows.append(row)
+
+        forecast_products.append(
+            {
+                "product_id": int(product.id),
+                "product_name": product.product_name,
+                "history_weeks": int(len(history_values)),
+                "has_sales_history": bool(history_values),
+                "backtest_mae": backtest_mae,
+                "total_forecast_units": int(sum(row["forecast_units"] for row in week_rows)),
+                "weeks": week_rows,
+            }
+        )
+
+    return {
+        "model_name": "Seasonal-naive weekly baseline",
+        "horizon_weeks": int(horizon_weeks),
+        "seasonal_period_weeks": int(seasonal_period_weeks),
+        "generated_at": generated_at.isoformat(),
+        "limitations": [
+            "Baseline forecast intended for sparse transactional data; it does not learn causal drivers.",
+            "Products without sales history forecast zero demand until transactions are recorded.",
+            "Use this as an operational planning baseline and recalibrate with domain events.",
+        ],
+        "products": forecast_products,
+        "rows": forecast_rows,
+    }
+
+
 def build_analytics_context(date_range: DateRange | None = None) -> dict:
     sales_df = get_sales_dataframe(date_range)
     return {
@@ -228,4 +348,5 @@ def build_analytics_context(date_range: DateRange | None = None) -> dict:
         "revenue_trends": revenue_trends(sales_df),
         "category_performance": category_performance(sales_df),
         "inventory_distribution": inventory_distribution(),
+        "forecast": demand_forecast(sales_df),
     }
